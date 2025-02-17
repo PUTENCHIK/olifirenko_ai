@@ -1,5 +1,9 @@
 # Искусственный интеллект
 
+## Задания
+
+1. [Распознавание текста при помощи k-Nearest Neighbour](knn_ocr/)
+
 ## Скрипты
 
 1. [K-Nearest Neighbours](knn_cv/)
