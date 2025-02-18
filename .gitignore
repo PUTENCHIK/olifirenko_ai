@@ -170,5 +170,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+.idea/
+
 generating_squares/images
 generating_squares/coords.txt
