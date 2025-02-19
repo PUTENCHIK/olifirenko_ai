@@ -68,8 +68,7 @@ def read_dataset(path: pathlib.Path) -> tuple:
     return data, labels, symbols2numbers, max_sizes
 
 
-def extract_symbols(image: np.array, max_sizes: list) -> np.array:
-    # print(image.shape)
+def extract_symbols(image: np.array, max_sizes: list) -> list:
     labeled = label(image)
     regions = regionprops(labeled)
 
@@ -77,7 +76,6 @@ def extract_symbols(image: np.array, max_sizes: list) -> np.array:
     for region in regions:
         order[int(region.centroid[1])] = region.label
     order = sorted(order.items())
-    # print(order)
     for i, (x, lbl) in enumerate(order):
         if i > 0:
             diff = (x - order[i-1][0]) / image.shape[1]
@@ -85,12 +83,22 @@ def extract_symbols(image: np.array, max_sizes: list) -> np.array:
                 labeled[labeled == lbl] = order[i-1][1]
 
     symbols = dict()
+    bounds = list()
     regions = regionprops(labeled)
     for region in regions:
+        bounds += [(region.bbox[1], region.bbox[3])]
         symbols[int(region.centroid[1])] = binary(image_to_size(region.image, max_sizes))
 
+    diffs = list()
+    bounds = sorted(bounds)
+    for i, bound in enumerate(bounds):
+        if i > 0:
+            diff = (bound[0] - bounds[i-1][1]) / image.shape[1]
+            diffs += [diff]
+            if diff > 0.03:
+                symbols[(bound[0] + bounds[i-1][1])/2] = None
+
     symbols = [image for x, image in sorted(symbols.items())]
-    symbols = np.array(symbols)
     return symbols
 
 
@@ -118,14 +126,14 @@ knn.train(dataset, cv2.ml.ROW_SAMPLE, labels)
 
 for i, text_img in enumerate(texts):
     symbols_img = extract_symbols(text_img, max_size_symbol)
-    # print(f"{i}) {symbols_img.shape}")
-    
     string = ""
     for j, symbol in enumerate(symbols_img):
+        if symbol is None:
+            string += " "
+            continue
         img = symbol.flatten()
         img = img.reshape(1, img.shape[0]).astype("float32")
         ret, results, neighbours, dist = knn.findNearest(img, 3)
-        # print(f"\t{j}) {ret} {results}: {numbers2symbols[int(ret)]}")
         string += numbers2symbols[int(ret)]
     
     print(f"{i}) {string}")
