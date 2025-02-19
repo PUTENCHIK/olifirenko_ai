@@ -38,7 +38,7 @@ def read_dataset(path: pathlib.Path) -> tuple:
 
     for directory in path.iterdir():
         if directory.is_dir():
-            symbol = directory.stem
+            symbol = directory.stem if len(directory.stem) == 1 else directory.stem[-1]
             label = len(symbols2numbers.items()) + 1
             symbols2numbers[symbol] = label
 
@@ -100,6 +100,7 @@ train_dir = task_dir / "train"
 
 texts = read_texts(task_dir)
 dataset, labels, symbols2numbers, max_size_symbol = read_dataset(train_dir)
+numbers2symbols = {n: s for s, n in symbols2numbers.items()}
 
 dataset = dataset.astype("f4")
 labels = labels.reshape(-1, 1).astype("f4")
@@ -112,13 +113,19 @@ print(f"Texts amount: {len(texts)}")
 print(f"Symbols amount: {len(symbols2numbers.items())}")
 print(f"Dataset | labels shape: {dataset.shape} | {labels.shape}")
 
-# knn = cv2.ml.KNearest_create()
-# knn.train(dataset, cv2.ml.ROW_SAMPLE, labels)
+knn = cv2.ml.KNearest_create()
+knn.train(dataset, cv2.ml.ROW_SAMPLE, labels)
 
 for i, text_img in enumerate(texts):
     symbols_img = extract_symbols(text_img, max_size_symbol)
-    print(f"{i}) {symbols_img.shape}")
-    # for i, symbol in enumerate(symbols_img):
-    #     plt.imshow(symbol)
-    #     plt.title(str(i+1))
-    #     plt.show()
+    # print(f"{i}) {symbols_img.shape}")
+    
+    string = ""
+    for j, symbol in enumerate(symbols_img):
+        img = symbol.flatten()
+        img = img.reshape(1, img.shape[0]).astype("float32")
+        ret, results, neighbours, dist = knn.findNearest(img, 3)
+        # print(f"\t{j}) {ret} {results}: {numbers2symbols[int(ret)]}")
+        string += numbers2symbols[int(ret)]
+    
+    print(f"{i}) {string}")
