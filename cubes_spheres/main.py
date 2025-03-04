@@ -25,7 +25,7 @@ class Image:
         self.resized = self.get_resized()
 
         self.object_type = ObjectType.CUBE if type == 'c' else ObjectType.SPHERE
-        self.to_delete = True
+        self.to_delete = False
         self.center = (self.resized.shape[1]//2, self.resized.shape[0]//2)
     
     def is_vertical(self) -> bool:
@@ -103,7 +103,7 @@ dataset = root / "dataset"
 
 images_path = [path for path in dataset.glob("*.jpg")]
 print(f"Pathes amount: {len(images_path)}")
-images = [Image(i, cv2.imread(str(path)), 'c' if i < 75 else 's') for i, path in enumerate(images_path)]
+images = [Image(i, cv2.imread(str(path)), 'c') for i, path in enumerate(images_path)]
 
 window_name = "Main"
 window = cv2.namedWindow(window_name, cv2.WINDOW_KEEPRATIO)
@@ -116,8 +116,6 @@ to_process = False
 while True:
     image = images[counter]
     cv2.imshow(window_name, image.with_extra_info())
-    # plt.imshow(image.with_extra_info())
-    # plt.show()
     
     key = cv2.waitKey(1)
 
@@ -149,7 +147,6 @@ if to_process:
     train.mkdir(exist_ok=True)
     test.mkdir(exist_ok=True)
 
-    limit = 10
     train_spheres, train_cubes = 0, 0
     test_spheres, test_cubes = 0, 0
 
@@ -159,37 +156,31 @@ if to_process:
             continue
         
         is_sphere = image.object_type == ObjectType.SPHERE
-        to_train = bool(np.random.randint(0, 2))
+        to_train = train_spheres <= test_spheres if is_sphere else train_cubes <= test_cubes
         result = image.resized[image.center[1]-Image.NEED_SIZE//2:image.center[1]+Image.NEED_SIZE//2,
                                image.center[0]-Image.NEED_SIZE//2:image.center[0]+Image.NEED_SIZE//2]
         if is_sphere:
-            if to_train and train_spheres < limit:
+            if to_train:
                 print(f"{i} {result.shape} sphere ({train_spheres}, {test_spheres}) -> train")
                 train_spheres += 1
                 cv2.imwrite(str(train / Image.SPHERE_TEMPLATE.format(Image.ID, train_spheres)),
                             result)
-                continue
-            if test_spheres < limit:
+            else:
                 print(f"{i} {result.shape} sphere ({train_spheres}, {test_spheres}) -> test")
                 test_spheres += 1
                 cv2.imwrite(str(test / Image.SPHERE_TEMPLATE.format(Image.ID, test_spheres)),
                             result)
-            else:
-                print(f"{i} sphere ({train_spheres}, {test_spheres}) -> skip")
         else:
-            if to_train and train_cubes < limit:
+            if to_train:
                 print(f"{i} {result.shape} cube ({train_cubes}, {test_cubes}) -> train")
                 train_cubes += 1
                 cv2.imwrite(str(train / Image.CUBE_TEMPLATE.format(Image.ID, train_cubes)),
                             result)
-                continue
-            if test_cubes < limit:
+            else:
                 print(f"{i} {result.shape} cube ({train_cubes}, {test_cubes}) -> test")
                 test_cubes += 1
                 cv2.imwrite(str(test / Image.CUBE_TEMPLATE.format(Image.ID, test_cubes)),
                             result)
-            else:
-                print(f"{i} cube ({train_cubes}, {test_cubes}) -> skip")
 
-    print(train_spheres, test_spheres)
-    print(train_cubes, test_cubes)
+    print(f"Spheres: {train_spheres}, {test_spheres}")
+    print(f"Cubes: {train_cubes}, {test_cubes}")
