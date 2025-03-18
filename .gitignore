@@ -174,3 +174,5 @@ cython_debug/
 
 generating_squares/images
 generating_squares/coords.txt
+
+.python-version
