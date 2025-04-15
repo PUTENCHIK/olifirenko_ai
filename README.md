@@ -19,3 +19,4 @@
 9. Работа с моделями YOLO:
     * [Дефолтное детектирование](yolo/script1.py);
     * [Подсчёт приседаний](yolo/script2.py);
+    * [Апельсин с лицом (cringe)](face_segmentation/);
